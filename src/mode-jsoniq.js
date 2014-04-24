@@ -2943,6 +2943,9 @@ var completers = [snippetCompleter, textCompleter, keyWordCompleter];
 exports.addCompleter = function(completer) {
     completers.push(completer);
 };
+exports.textCompleter = textCompleter;
+exports.keyWordCompleter = keyWordCompleter;
+exports.snippetCompleter = snippetCompleter;
 
 var expandSnippet = {
     name: "expandSnippet",
@@ -2996,7 +2999,7 @@ var doLiveAutocomplete = function(e) {
     var prefix = util.retrievePrecedingIdentifier(line, pos.column);
     completers.forEach(function(completer) {
         if (completer.identifierRegexps) {
-            completer.identifierRegexps.forEach(function(identifierRegex){
+            completer.identifierRegexps.forEach(function(identifierRegex) {
                 if (!prefix) {
                     prefix = util.retrievePrecedingIdentifier(line, pos.column, identifierRegex);
                 }
@@ -3004,7 +3007,7 @@ var doLiveAutocomplete = function(e) {
         }
     });
     if (e.command.name === "backspace" && !prefix) {
-        if (hasCompleter) 
+        if (hasCompleter)
             editor.completer.detach();
     }
     else if (e.command.name === "insertstring") {
@@ -3026,6 +3029,10 @@ require("../config").defineOptions(Editor.prototype, "editor", {
     enableBasicAutocompletion: {
         set: function(val) {
             if (val) {
+                if (Array.isArray(val)) {
+                    completers = val;
+                }
+
                 this.completers = completers;
                 this.commands.addCommand(Autocomplete.startCommand);
             } else {
@@ -3034,9 +3041,15 @@ require("../config").defineOptions(Editor.prototype, "editor", {
         },
         value: false
     },
-    enableLiveAutocomplete: {
+    enableLiveAutocompletion: {
         set: function(val) {
             if (val) {
+                if (Array.isArray(val)) {
+                    completers = val;
+                }
+
+                this.completers = completers;
+                this.completers = completers;
                 this.commands.on('afterExec', doLiveAutocomplete);
             } else {
                 this.commands.removeListener('afterExec', doLiveAutocomplete);
@@ -3058,7 +3071,6 @@ require("../config").defineOptions(Editor.prototype, "editor", {
         value: false
     }
 });
-
 });
 
 define('ace/snippets', ['require', 'exports', 'module' , 'ace/lib/lang', 'ace/range', 'ace/keyboard/hash_handler', 'ace/tokenizer', 'ace/lib/dom'], function(require, exports, module) {
@@ -4553,9 +4565,9 @@ exports.parForEach = function(array, fn, callback) {
                 callback(result, err);
         });
     }
-}
+};
 
-var ID_REGEX = /[a-zA-Z_0-9\$-]/;
+var ID_REGEX = /[a-zA-Z_0-9\$-]|[^\u0000-\u007F]/;
 
 exports.retrievePrecedingIdentifier = function(text, pos, regex) {
     regex = regex || ID_REGEX;
@@ -4567,7 +4579,7 @@ exports.retrievePrecedingIdentifier = function(text, pos, regex) {
             break;
     }
     return buf.reverse().join("");
-}
+};
 
 exports.retrieveFollowingIdentifier = function(text, pos, regex) {
     regex = regex || ID_REGEX;
@@ -4579,14 +4591,14 @@ exports.retrieveFollowingIdentifier = function(text, pos, regex) {
             break;
     }
     return buf;
-}
+};
 
 });
 
 define('ace/autocomplete/text_completer', ['require', 'exports', 'module' , 'ace/range'], function(require, exports, module) {
     var Range = require("../range").Range;
     
-    var splitRegex = /[^a-zA-Z_0-9\$\-]+/;
+    var splitRegex = /[^a-zA-Z_0-9\$\-\u00C0-\u1FFF\u2C00-\uD7FF\w]+/;
 
     function getWordIndex(doc, pos) {
         var textBefore = doc.getTextRange(Range.fromPoints({row: 0, column:0}, pos));
